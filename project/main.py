@@ -1,12 +1,8 @@
 import os
 import requests
 from playwright.sync_api import sync_playwright
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Telegram settings from environment variables
+# Telegram settings from GitHub Secrets
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
 
