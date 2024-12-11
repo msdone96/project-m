@@ -23,10 +23,12 @@ def send_telegram_message(message):
 def scrape_flipkart():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)  # Launch Chromium browser in headless mode
-        page = browser.new_page()
+        context = browser.new_context(
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        )
+        page = context.new_page()  # Open a new page with the specified context
 
-        # Set user agent and navigate to Flipkart's footwear page
-        page.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+        # Navigate to Flipkart's footwear page
         page.goto('https://www.flipkart.com/footwear/pr?sid=osp')
 
         # Retry mechanism and waiting for the selector
