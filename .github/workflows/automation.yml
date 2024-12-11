@@ -1,0 +1,29 @@
+name: Project Automation
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Runs every 5 minutes
+  push:
+    branches:
+      - main  # Trigger workflow on pushes to the main branch
+
+jobs:
+  automation-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run main project script
+        run: |
+          python project/main.py
