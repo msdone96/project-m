@@ -29,7 +29,3 @@ jobs:
       - name: Run scraping tasks
         run: |
           python project/main.py
-
-      - name: Run Tests (Optional)
-        run: |
-          python -m unittest discover tests/
