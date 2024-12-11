@@ -31,6 +31,9 @@ def scrape_flipkart():
         # Navigate to Flipkart's footwear page
         page.goto('https://www.flipkart.com/footwear/pr?sid=osp')
 
+        # Wait for page to load completely
+        page.wait_for_load_state('load', timeout=120000)  # Wait for 2 minutes for page to load
+
         # Retry mechanism and waiting for the selector
         max_retries = 3
         discount_threshold = 60  # Set discount threshold to 60%
@@ -38,7 +41,7 @@ def scrape_flipkart():
         for attempt in range(max_retries):
             try:
                 # Wait for the product selector to be visible (increased timeout)
-                page.wait_for_selector('._1AtVbE', timeout=60000)  # 60 seconds timeout
+                page.wait_for_selector('._1AtVbE', timeout=120000)  # Wait for 2 minutes
 
                 # Get product details
                 product_elements = page.query_selector_all('._1AtVbE')
