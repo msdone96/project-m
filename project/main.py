@@ -1,84 +1,77 @@
-import requests
 import os
+import requests
 from playwright.sync_api import sync_playwright
+from dotenv import load_dotenv
 
-# Retrieve Telegram chat_id and token from environment variables
-chat_id = os.getenv('TELEGRAM_CHAT_ID')
-token = os.getenv('TELEGRAM_API_TOKEN')
+# Load environment variables from .env file
+load_dotenv()
 
-# Function to send a message to Telegram
-def send_telegram_message(chat_id, token, message):
-    url = f'https://api.telegram.org/bot{token}/sendMessage'
+# Telegram settings from environment variables
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
+
+# Function to send message to Telegram
+def send_telegram_message(message):
+    url = f"https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/sendMessage"
     payload = {
-        'chat_id': chat_id,
-        'text': message,
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message
     }
-    
-    response = requests.post(url, data=payload)
-    
-    if response.status_code == 200:
-        print("Message sent successfully")
-    else:
-        print(f"Failed to send message: {response.status_code}")
+    try:
+        response = requests.post(url, data=payload)
+        if response.status_code == 200:
+            print("Message sent successfully!")
+        else:
+            print(f"Failed to send message. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error sending message: {e}")
 
-# Function to scrape deals from Flipkart
+# Scraping function using Playwright
 def scrape_flipkart():
-    deals = []
-
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)  # Run in headless mode
+        browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
-        # Start scraping a page with products, you can add more pages or categories as needed
-        url = 'https://www.flipkart.com/footwear/pr?sid=osp&p%5B%5D=facets.discount_range_v1%255B%255D%3D70%2525%2Bor%2Bmore&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove'
-        page.goto(url)
+        try:
+            print("Starting Flipkart Scraper...")
+            # Go to the Flipkart page (update the URL if necessary)
+            page.goto('https://www.flipkart.com/footwear/pr?sid=osp&p%5B%5D=facets.discount_range_v1%255B%255D%3D70%2525%2Bor%2Bmore&p%5B%5D=facets.rating%255B%255D%3D4%25E2%2598%2585%2B%2526%2Babove')
+            page.wait_for_selector('._1AtVbE')  # Ensure the page is loaded and the product list is present
 
-        # Wait for the content to load
-        page.wait_for_selector('.col-12-12')
+            # Get all product items on the page
+            products = page.query_selector_all('._1AtVbE')
 
-        # Find the deals based on the discount info
-        product_elements = page.query_selector_all('.col-12-12')
+            found_deals = []
 
-        for product in product_elements:
-            try:
-                name = product.query_selector('.IRpwTa').inner_text()
-                discount = product.query_selector('.gUuXy-').inner_text().replace('%', '')
-                
-                # Filter deals above 91% discount
-                if int(discount) >= 91:
-                    deals.append({
-                        'name': name,
-                        'discount': int(discount)
-                    })
-            except Exception as e:
-                print(f"Error extracting product info: {e}")
+            for product in products:
+                try:
+                    # Extract product name, discount, and price
+                    product_name = product.query_selector('._4rR01T').inner_text() if product.query_selector('._4rR01T') else 'No name found'
+                    discount = product.query_selector('._3Ay6Sb').inner_text() if product.query_selector('._3Ay6Sb') else 'No discount found'
+                    price = product.query_selector('._30jeq3').inner_text() if product.query_selector('._30jeq3') else 'No price found'
 
-        browser.close()
+                    # Extract discount percentage (if available) and check if it's above 91%
+                    if discount != 'No discount found':
+                        discount_percentage = int(discount.replace('%', ''))
+                        if discount_percentage > 91:
+                            found_deals.append(f"{product_name} - {discount_percentage}% off - Price: {price}")
+                    
+                except AttributeError as e:
+                    print(f"Error extracting product info: {e}")
+            
+            # Send message if deals are found above 91%
+            if found_deals:
+                deals_message = "\n".join(found_deals)
+                send_telegram_message(f"Found deals above 91%:\n{deals_message}")
+            else:
+                send_telegram_message("No deals found above 91%.")
 
-    return deals
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            send_telegram_message(f"Error occurred during scraping: {e}")
+        finally:
+            browser.close()
 
-# Function to send deals above 91% to Telegram
-def send_deals_to_telegram(deals):
-    if deals:
-        message = "Here are the deals above 91%:\n"
-        for deal in deals:
-            message += f"{deal['name']}: {deal['discount']}% off\n"
-        send_telegram_message(chat_id, token, message)
-    else:
-        send_telegram_message(chat_id, token, "No deals found above 91%")
-
-# Main function to run the scraper and send results
-def main():
-    print("Starting Flipkart Scraper...")
-    try:
-        deals = scrape_flipkart()
-        if deals:
-            send_deals_to_telegram(deals)
-        else:
-            print("No deals found above 91%.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        send_telegram_message(chat_id, token, f"An error occurred while scraping: {e}")
-
+# Run the scraper function
 if __name__ == "__main__":
-    main()
+    scrape_flipkart()
