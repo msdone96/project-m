@@ -1,10 +1,10 @@
 import requests
-import time
+import os
 from playwright.sync_api import sync_playwright
 
-# Your Telegram Bot Token and Chat ID
-chat_id = '6500267334'
-token = '8070344172:AAHwWrbfbA3Ty8rICF9RS8pov1Sp9KG9BHE'
+# Retrieve Telegram chat_id and token from environment variables
+chat_id = os.getenv('TELEGRAM_CHAT_ID')
+token = os.getenv('TELEGRAM_API_TOKEN')
 
 # Function to send a message to Telegram
 def send_telegram_message(chat_id, token, message):
